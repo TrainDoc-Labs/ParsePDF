@@ -32,7 +32,7 @@ if uploaded_file and convert_btn:
             # Perform the conversion using the toggle values
             md_text = pymupdf4llm.to_markdown(
                 tmp_path, 
-                write_images = False,
+                write_images = True,
                 
                 header=include_header, 
                 footer=include_footer
