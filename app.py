@@ -12,6 +12,11 @@ st.title("📄 ParsePDF")
 with st.sidebar:
     st.header("Upload & Settings")
     uploaded_file = st.file_uploader("Select a PDF", type="pdf")
+    
+    # Checkboxes for toggling header/footer
+    include_header = st.checkbox("Include headers", value=False)
+    include_footer = st.checkbox("Include footers", value=False)
+    
     convert_btn = st.button("Convert to Markdown", type="primary")
 
 # Main display area
@@ -24,13 +29,12 @@ if uploaded_file and convert_btn:
             tmp_path = tmp_file.name
 
         try:
-            
-            # Perform the conversion with ignore_images set to True
+            # Perform the conversion using the toggle values
             md_text = pymupdf4llm.to_markdown(
                 tmp_path, 
-                ignore_images=True,  # Hardcoded to ignore images
-                header=True, 
-                footer=True
+                ignore_images=True, 
+                header=include_header, 
+                footer=include_footer
             )
             
             status.update(label="Done!", state="complete", expanded=False)
