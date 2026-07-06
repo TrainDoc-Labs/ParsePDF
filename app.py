@@ -1,46 +1,46 @@
 import streamlit as st
-from docling.document_converter import DocumentConverter
+import pdfplumber
 import tempfile
 import os
 
-st.set_page_config(page_title="ParsePDF Pro", layout="wide")
-st.title("📄 ParsePDF with Docling")
+st.set_page_config(page_title="PDF to Markdown", layout="wide")
+st.title("📄 PDF to Markdown (Table-Aware)")
 
-# 1. Cache the converter so it doesn't reload on every interaction
-@st.cache_resource
-def get_converter():
-    return DocumentConverter()
+uploaded_file = st.sidebar.file_uploader("Upload PDF", type="pdf")
 
-with st.sidebar:
-    st.header("Upload")
-    uploaded_file = st.file_uploader("Select a PDF", type="pdf")
-    convert_btn = st.button("Convert to Markdown", type="primary")
-
-if uploaded_file and convert_btn:
-    with st.status("Processing with Docling...", expanded=True) as status:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-            tmp_file.write(uploaded_file.getvalue())
-            tmp_path = tmp_file.name
+if uploaded_file:
+    if st.sidebar.button("Convert"):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+            tmp.write(uploaded_file.getvalue())
+            tmp_path = tmp.name
 
         try:
-            # 2. Use Docling to convert
-            converter = get_converter()
-            result = converter.convert(tmp_path)
-            clean_md_text = result.document.export_to_markdown()
+            markdown_output = []
             
-            status.update(label="Done!", state="complete", expanded=False)
-            
-            tab1, tab2 = st.tabs(["Preview", "Raw Code"])
-            with tab1:
-                st.markdown(clean_md_text)
-            with tab2:
-                st.code(clean_md_text, language="markdown")
-                
-            st.download_button("Download .md", clean_md_text, "document.md")
+            with pdfplumber.open(tmp_path) as pdf:
+                for page in pdf.pages:
+                    # 1. Extract tables first
+                    tables = page.extract_tables()
+                    text = page.extract_text()
+                    
+                    # 2. Convert tables to Markdown format
+                    for table in tables:
+                        if table:
+                            # Build markdown table structure
+                            md_table = "\n| " + " | ".join([str(cell or "") for cell in table[0]]) + " |\n"
+                            md_table += "| " + " | ".join(["---"] * len(table[0])) + " |\n"
+                            for row in table[1:]:
+                                md_table += "| " + " | ".join([str(cell or "") for cell in row]) + " |\n"
+                            markdown_output.append(md_table)
+                    
+                    # 3. Add text content
+                    if text:
+                        markdown_output.append(text)
 
-        except Exception as e:
-            status.update(label="Failed!", state="error", expanded=True)
-            st.error(f"Error: {e}")
+            final_md = "\n\n".join(markdown_output)
+            
+            st.markdown(final_md)
+            st.download_button("Download .md", final_md, "document.md")
+            
         finally:
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
+            os.remove(tmp_path)
