@@ -24,13 +24,13 @@ if uploaded_file and convert_btn:
             tmp_path = tmp_file.name
 
         try:
-            st.write("Extracting content via PyMuPDF...")
+            
             # Perform the conversion with ignore_images set to True
             md_text = pymupdf4llm.to_markdown(
                 tmp_path, 
                 ignore_images=True,  # Hardcoded to ignore images
-                header=False, 
-                footer=False
+                header=True, 
+                footer=True
             )
             
             status.update(label="Done!", state="complete", expanded=False)
