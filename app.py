@@ -6,7 +6,7 @@ import os
 # Set page layout to wide
 st.set_page_config(page_title="ParsePDF Pro", layout="wide")
 
-st.title("📄 body = ParsePDF")
+st.title(body = "📄ParsePDF")
 
 # Sidebar for controls
 with st.sidebar:
