@@ -6,21 +6,12 @@ import os
 # Set page layout to wide
 st.set_page_config(page_title="ParsePDF Pro", layout="wide")
 
-# Custom CSS for a cleaner look
-st.markdown("""
-    <style>
-    .stButton>button { width: 100%; border-radius: 5px; }
-    </style>
-""", unsafe_allow_html=True)
-
-st.title("📄 ParsePDF Pro")
-st.markdown("Easily convert your PDFs into clean, structured Markdown.")
+st.title("📄 ParsePDF")
 
 # Sidebar for controls
 with st.sidebar:
     st.header("Upload & Settings")
     uploaded_file = st.file_uploader("Select a PDF", type="pdf")
-    ignore_imgs = st.toggle("Ignore images", value=True)
     convert_btn = st.button("Convert to Markdown", type="primary")
 
 # Main display area
@@ -34,10 +25,10 @@ if uploaded_file and convert_btn:
 
         try:
             st.write("Extracting content via PyMuPDF...")
-            # Perform the conversion
+            # Perform the conversion with ignore_images set to True
             md_text = pymupdf4llm.to_markdown(
                 tmp_path, 
-                ignore_images=ignore_imgs, 
+                ignore_images=True,  # Hardcoded to ignore images
                 header=False, 
                 footer=False
             )
