@@ -2,11 +2,12 @@ import streamlit as st
 import pymupdf4llm
 import tempfile
 import os
+from bs4 import BeautifulSoup  # 1. Added import
 
 # Set page layout to wide
 st.set_page_config(page_title="ParsePDF Pro", layout="wide")
 
-st.title("📄 ParsePDF")
+st.title("📄 body = ParsePDF")
 
 # Sidebar for controls
 with st.sidebar:
@@ -32,11 +33,14 @@ if uploaded_file and convert_btn:
             # Perform the conversion using the toggle values
             md_text = pymupdf4llm.to_markdown(
                 tmp_path, 
-                write_images = True,
-                
+                ignore_images=True, 
                 header=include_header, 
                 footer=include_footer
             )
+            
+            # 2. Clean the markdown text using BeautifulSoup
+            soup = BeautifulSoup(md_text, "html.parser")
+            clean_md_text = soup.get_text()
             
             status.update(label="Done!", state="complete", expanded=False)
             
@@ -44,14 +48,16 @@ if uploaded_file and convert_btn:
             tab1, tab2 = st.tabs(["Preview", "Raw Code"])
             
             with tab1:
-                st.markdown(md_text)
+                # 3. Use the cleaned text
+                st.markdown(clean_md_text)
                 
             with tab2:
-                st.code(md_text, language="markdown")
+                # 4. Use the cleaned text
+                st.code(clean_md_text, language="markdown")
                 
             st.download_button(
                 label="Download .md File", 
-                data=md_text, 
+                data=clean_md_text, 
                 file_name="document.md", 
                 mime="text/markdown"
             )
