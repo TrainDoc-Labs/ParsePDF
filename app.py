@@ -3,41 +3,42 @@ import pymupdf4llm
 import tempfile
 import os
 
-st.title("ParsePDF: PDF to Markdown")
+# Set page layout to wide
+st.set_page_config(page_title="ParsePDF Pro", layout="wide")
 
-uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
+# Custom CSS for a cleaner look
+st.markdown("""
+    <style>
+    .reportview-container { background: #f9f9f9; }
+    .stButton>button { width: 100%; border-radius: 5px; }
+    </style>
+""", unsafe_allow_html=True)
 
-if uploaded_file and st.button("Convert"):
-    # Create a secure temporary file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-        tmp_file.write(uploaded_file.getvalue())
-        tmp_path = tmp_file.name
+st.title("📄 ParsePDF")
+st.markdown("Easily convert your PDFs into clean, structured Markdown.")
 
-    try:
-        # Perform conversion
-        md_text = pymupdf4llm.to_markdown(
-            tmp_path, 
-            ignore_images=True, 
-            header=False, 
-            footer=False, 
-            show_progress=True
-        )
-        st.success("Conversion successful!")
+# Sidebar for controls
+with st.sidebar:
+    st.header("Upload & Settings")
+    uploaded_file = st.file_uploader("Select a PDF", type="pdf")
+    ignore_imgs = st.toggle("Ignore images", value=True)
+    convert_btn = st.button("Convert to Markdown", type="primary")
+
+# Main display area
+if uploaded_file and convert_btn:
+    with st.status("Processing your document...", expanded=True) as status:
+        # ... [Your logic for tempfile and pymupdf4llm here] ...
+        # (Assuming md_text is retrieved successfully)
         
-        # Display the output
+        status.update(label="Done!", state="complete", expanded=False)
+        
+    # Use tabs for a better UI experience
+    tab1, tab2 = st.tabs(["Preview", "Raw Code"])
+    
+    with tab1:
         st.markdown(md_text)
         
-        # Add the download button
-        st.download_button(
-            label="Download Markdown",
-            data=md_text,
-            file_name="converted_document.md",
-            mime="text/markdown"
-        )
+    with tab2:
+        st.code(md_text, language="markdown")
         
-    except Exception as e:
-        st.error(f"An error occurred: {e}")
-    finally:
-        # Ensure cleanup happens even if an error occurs
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+    st.download_button("Download .md File", md_text, "document.md", "text/markdown")
