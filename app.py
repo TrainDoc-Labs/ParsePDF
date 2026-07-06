@@ -1,46 +1,39 @@
 import streamlit as st
-import pdfplumber
+from markitdown import MarkItDown
 import tempfile
 import os
 
-st.set_page_config(page_title="PDF to Markdown", layout="wide")
-st.title("📄 PDF to Markdown (Table-Aware)")
+st.set_page_config(page_title="ParsePDF Pro", layout="wide")
+st.title("📄 ParsePDF with MarkItDown")
 
-uploaded_file = st.sidebar.file_uploader("Upload PDF", type="pdf")
+# Initialize MarkItDown
+md_tool = MarkItDown()
 
-if uploaded_file:
-    if st.sidebar.button("Convert"):
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            tmp.write(uploaded_file.getvalue())
-            tmp_path = tmp.name
+with st.sidebar:
+    st.header("Upload")
+    uploaded_file = st.file_uploader("Select a file", type=["pdf", "docx", "pptx", "xlsx"])
+    convert_btn = st.button("Convert to Markdown", type="primary")
+
+if uploaded_file and convert_btn:
+    with st.status("Converting...", expanded=True) as status:
+        # Save uploaded file to temp path
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{uploaded_file.name.split('.')[-1]}") as tmp_file:
+            tmp_file.write(uploaded_file.getvalue())
+            tmp_path = tmp_file.name
 
         try:
-            markdown_output = []
+            # Conversion happens here
+            result = md_tool.convert(tmp_path)
+            clean_md_text = result.text_content
             
-            with pdfplumber.open(tmp_path) as pdf:
-                for page in pdf.pages:
-                    # 1. Extract tables first
-                    tables = page.extract_tables()
-                    text = page.extract_text()
-                    
-                    # 2. Convert tables to Markdown format
-                    for table in tables:
-                        if table:
-                            # Build markdown table structure
-                            md_table = "\n| " + " | ".join([str(cell or "") for cell in table[0]]) + " |\n"
-                            md_table += "| " + " | ".join(["---"] * len(table[0])) + " |\n"
-                            for row in table[1:]:
-                                md_table += "| " + " | ".join([str(cell or "") for cell in row]) + " |\n"
-                            markdown_output.append(md_table)
-                    
-                    # 3. Add text content
-                    if text:
-                        markdown_output.append(text)
+            status.update(label="Done!", state="complete", expanded=False)
+            
+            st.markdown(clean_md_text)
+            st.download_button("Download .md", clean_md_text, "document.md")
 
-            final_md = "\n\n".join(markdown_output)
-            
-            st.markdown(final_md)
-            st.download_button("Download .md", final_md, "document.md")
-            
+        except Exception as e:
+            status.update(label="Failed!", state="error", expanded=True)
+            st.error(f"Error: {e}")
         finally:
-            os.remove(tmp_path)
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
